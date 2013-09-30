@@ -81,6 +81,8 @@ public class Song {
 	}
 
 	public void render(GameContainer container, Graphics g) {
+		if (!started)
+			return;
 		float line = (float)container.getHeight() - 200.0f;
 		float shift = (float)container.getWidth() / 8.0f / 2.0f;
 		for (Note note : notes) {
