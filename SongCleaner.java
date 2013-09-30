@@ -26,7 +26,7 @@ public class SongCleaner {
 		}
 
 		// refine beat
-		double beat = bpm/2.0;
+		double beat = bpm/4.0;
 		for (int i = 0; i < times.length; i++) {
 			double time = times[i];
 			double lower = Math.floor(time / beat) * beat;

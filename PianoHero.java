@@ -30,7 +30,7 @@ public class PianoHero extends BasicGame {
 
 	@Override
 	public void init(GameContainer container) throws SlickException {
-		spikeInARail = new Song("SpikeInARail.wav", "clean_SpikeInARail.txt");
+		spikeInARail = new Song("SpikeInARail.wav", "converted_workspace_SpikeInARail.txt");
 	}
 
 	@Override
