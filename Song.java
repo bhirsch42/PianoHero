@@ -3,21 +3,41 @@ import java.util.*;
 public class Song {
 
 	private In data;
-	private Sound song;
+	private double[] song;
 	private long startTime;
 	private boolean started = false;
 	private ArrayList<Note> notes;
 	private int score = 0;
 
-	public Song(String songFilename, String dataFilename) {
-		this.data = new In(dataFilename);
-		try {
-			this.song = new Sound(songFilename);
-		}
-		catch (SlickException e) {
-			e.printStackTrace();
+	private class ThreadPlayer implements Runnable {
+		private double[] clip;
+		
+		public ThreadPlayer(double[] clip) {
+			this.clip = clip;
 		}
 
+		public void run() {
+			for (int i = 0; i < clip.length; i++) {
+				StdAudio.play(clip[i]);
+			}
+			StdAudio.close();
+		} 
+
+	}
+
+	public Song(String songFilename, String dataFilename) {
+		this.data = new In(dataFilename);
+		// try {
+		// 	this.song = new Sound(songFilename);
+		// }
+		// catch (SlickException e) {
+		// 	e.printStackTrace();
+		// }
+		double[] songRead = StdAudio.read(songFilename);
+		song = new double[songRead.length/2];
+		for (int i = 0; i < songRead.length; i+=2) {
+			song[i/2] = songRead[i];
+		}
 		notes = new ArrayList<Note>();
 		while (!data.isEmpty()) {
 			String s[] = data.readLine().split(" ");
@@ -27,20 +47,49 @@ public class Song {
 	}
 
 	public Song(String songFilename) {
-		try {
-			this.song = new Sound(songFilename);
+		double[] songRead = StdAudio.read(songFilename);
+		song = new double[songRead.length/2];
+		for (int i = 0; i < songRead.length; i+=2) {
+			song[i/2] = songRead[i];
 		}
-		catch (SlickException e) {
-			e.printStackTrace();
-		}
+	}
+
+	public void addNote(Note note) {
+		notes.add(note);
+	}
+
+	public void threadPlay(double[] clip) {
+		ThreadPlayer player = new ThreadPlayer(clip);
+		Thread t = new Thread(player);
+		t.start();
 	}
 
 	public void start(GameContainer container) {
 		if (started)
 			return;
+		System.out.println(song.length);
 		started = true;
-		song.play();
+		threadPlay(song);
 		this.startTime = container.getTime();
+	}
+
+	public void start(double startBeat, double endBeat, double bpm) {
+		startBeat--;
+		// endBeat++;
+
+		double rate = 1000.0 / bpm * 44100.0/64.0;
+		int startIndex = (int)(startBeat * rate);
+		int endIndex = (int)(endBeat * rate);
+
+		if (startIndex < 0) startIndex = 0;
+		if (endIndex < startIndex) endIndex = startIndex;
+		if (endIndex >= song.length) endIndex = song.length-1;
+
+		double[] clip = new double[endIndex-startIndex];
+		for (int i = startIndex; i < endIndex; i++) {
+			clip[i-startIndex] = song[i];
+		}
+		threadPlay(clip);
 	}
 
 	public double getTime(GameContainer container) {
@@ -48,15 +97,6 @@ public class Song {
 	}
 
 	public void update(GameContainer container, int delta) {
-		// if (Note.aKeyPressed(container)) {
-		// 	for (Note note : notes) {
-		// 		if (!note.hasBeenHit() && note.canHit(container, getTime(container))) {
-		// 			if (note.hit(container, this.getTime(container))) {
-		// 				score++;
-		// 			}
-		// 		}
-		// 	}
-		// }
 		String[] keys = Note.getPressedKeys(container);
 		if (keys.length > 0) {
 			for (Note note : notes) {
@@ -68,7 +108,6 @@ public class Song {
 			}
 		}
 	}
-
 
 	private float speed = 0.4f;
 
@@ -94,6 +133,14 @@ public class Song {
 		}
 		g.drawString(this.getTime(container)+"", 100f, 100f);
 		g.drawLine(0.0f, line, 2000f, line);
+	}
+
+	public static void main(String[] args) {
+		int startBeat = Integer.parseInt(args[0]);
+		int endBeat = Integer.parseInt(args[1]);
+		double bpm = Double.parseDouble(args[2]);
+		Song spike = new Song("SpikeInARail.wav");
+		spike.start(startBeat, endBeat, bpm);
 	}
 
 }
