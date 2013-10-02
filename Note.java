@@ -23,6 +23,9 @@ public class Note {
 		return key;
 	}
 
+	public boolean equals(Note that) {
+		return this.time == that.time && this.key == that.key;
+	}
 
 	public float initPlace() {
 		if (this.key.equals("a"))

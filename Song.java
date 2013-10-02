@@ -5,14 +5,17 @@ public class Song {
 	private In data;
 	private double[] song;
 	private long startTime;
+	private long endTime;
 	private boolean started = false;
 	private ArrayList<Note> notes;
 	private int score = 0;
+	private Thread thread;
+	private Player player = new Player(null);
 
-	private class ThreadPlayer implements Runnable {
+	private class Player implements Runnable {
 		private double[] clip;
 		
-		public ThreadPlayer(double[] clip) {
+		public Player(double[] clip) {
 			this.clip = clip;
 		}
 
@@ -21,7 +24,7 @@ public class Song {
 				StdAudio.play(clip[i]);
 			}
 			StdAudio.close();
-		} 
+		}
 
 	}
 
@@ -59,9 +62,9 @@ public class Song {
 	}
 
 	public void threadPlay(double[] clip) {
-		ThreadPlayer player = new ThreadPlayer(clip);
-		Thread t = new Thread(player);
-		t.start();
+		player = new Player(clip);
+		thread = new Thread(player);
+		thread.start();
 	}
 
 	public void start(GameContainer container) {
@@ -73,10 +76,13 @@ public class Song {
 		this.startTime = container.getTime();
 	}
 
-	public void start(double startBeat, double endBeat, double bpm) {
+	public void start(GameContainer container, double startBeat, double endBeat, double bpm) {
 		startBeat--;
 		// endBeat++;
-
+		started = true;
+		this.startTime = container.getTime() - (long)(bpm*startBeat/2.0);
+		this.endTime = container.getTime() - (long)(bpm*(startBeat-endBeat)/2.0);
+		updateStarted(container);
 		double rate = 1000.0 / bpm * 44100.0/64.0;
 		int startIndex = (int)(startBeat * rate);
 		int endIndex = (int)(endBeat * rate);
@@ -94,6 +100,20 @@ public class Song {
 
 	public double getTime(GameContainer container) {
 		return container.getTime() - startTime;
+	}
+
+	public void updateEditor(GameContainer container, int delta) {
+		updateStarted(container);
+		if (!started) {
+			startTime = (long)(container.getTime()-endTime);
+		}
+	}
+
+	public void updateStarted(GameContainer container) {
+		if (getTime(container) > endTime) {
+			startTime = endTime;
+			started = false;
+		}
 	}
 
 	public void update(GameContainer container, int delta) {
@@ -132,15 +152,17 @@ public class Song {
 			}
 		}
 		g.drawString(this.getTime(container)+"", 100f, 100f);
+		g.drawString("Start time: " + startTime, 100f, 120f);
+		g.drawString("Start time: " + endTime, 100f, 140f);
 		g.drawLine(0.0f, line, 2000f, line);
 	}
 
 	public static void main(String[] args) {
-		int startBeat = Integer.parseInt(args[0]);
-		int endBeat = Integer.parseInt(args[1]);
-		double bpm = Double.parseDouble(args[2]);
-		Song spike = new Song("SpikeInARail.wav");
-		spike.start(startBeat, endBeat, bpm);
+		// int startBeat = Integer.parseInt(args[0]);
+		// int endBeat = Integer.parseInt(args[1]);
+		// double bpm = Double.parseDouble(args[2]);
+		// Song spike = new Song("SpikeInARail.wav");
+		// spike.start(startBeat, endBeat, bpm);
 	}
 
 }
